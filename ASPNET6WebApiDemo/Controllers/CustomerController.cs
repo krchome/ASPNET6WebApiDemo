@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ASPNET6WebApiDemo.Contexts;
 using ASPNET6WebApiDemo.Models;
+using ASPNET6WebApiDemo.Wrappers;
+using ASPNET6WebApiDemo.Filter;
 
 namespace ASPNET6WebApiDemo.Controllers
 {
@@ -22,32 +24,24 @@ namespace ASPNET6WebApiDemo.Controllers
         }
 
         // GET: api/Customer
+       
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomers()
+        public async Task<IActionResult> GetAll([FromQuery]PaginationFilter filter)
         {
-          if (_context.Customers == null)
-          {
-              return NotFound();
-          }
-            return await _context.Customers.ToListAsync();
+            var validFilter = new PaginationFilter(filter.PageNumber, filter.PageSize);
+            var pagedData = await _context.Customers.Skip((validFilter.PageNumber - 1)* validFilter.PageSize)
+                .Take(validFilter.PageSize).ToListAsync();
+            var totalRecords = await _context.Customers.CountAsync();
+            return Ok(new PagedResponse<List<Customer>>(pagedData,validFilter.PageNumber,validFilter.PageSize));
         }
-
+        //
         // GET: api/Customer/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Customer>> GetCustomer(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-          if (_context.Customers == null)
-          {
-              return NotFound();
-          }
-            var customer = await _context.Customers.FindAsync(id);
-
-            if (customer == null)
-            {
-                return NotFound();
-            }
-
-            return customer;
+         
+            var customer = await _context.Customers.Where(a=>a.Id == id).FirstOrDefaultAsync();
+            return Ok(new Response <Customer>(customer));
         }
 
         // PUT: api/Customer/5
