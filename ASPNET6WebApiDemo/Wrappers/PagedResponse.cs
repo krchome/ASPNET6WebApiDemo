@@ -6,7 +6,10 @@
         public int PageSize { get; set; }
         public int TotalPages { get; set; }
         public int TotalRecords { get; set; }
-      
+        public string PrevPageLink { get; set; } // Add this property
+        public string NextPageLink { get; set; } // Add this property
+
+
 
         public PagedResponse(T data, int pageNumber, int pageSize)
         {

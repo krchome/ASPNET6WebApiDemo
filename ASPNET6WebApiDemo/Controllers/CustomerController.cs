@@ -12,7 +12,7 @@ using ASPNET6WebApiDemo.Filter;
 
 namespace ASPNET6WebApiDemo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller]", Name = "DefaultApi")]
     [ApiController]
     public class CustomerController : ControllerBase
     {
@@ -24,16 +24,36 @@ namespace ASPNET6WebApiDemo.Controllers
         }
 
         // GET: api/Customer
-       
+
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery]PaginationFilter filter)
+        public async Task<IActionResult> GetAll([FromQuery] PaginationFilter filter)
         {
             var validFilter = new PaginationFilter(filter.PageNumber, filter.PageSize);
-            var pagedData = await _context.Customers.Skip((validFilter.PageNumber - 1)* validFilter.PageSize)
+            var pagedData = await _context.Customers.Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
                 .Take(validFilter.PageSize).ToListAsync();
             var totalRecords = await _context.Customers.CountAsync();
-            return Ok(new PagedResponse<List<Customer>>(pagedData,validFilter.PageNumber,validFilter.PageSize));
+            var totalPages = (int)Math.Ceiling((double)totalRecords / validFilter.PageSize);
+
+            // Add Previous and Next page links
+            string prevPageLink = validFilter.PageNumber > 1
+                ? Url.Link("DefaultApi", new { PageNumber = validFilter.PageNumber - 1, PageSize = validFilter.PageSize })
+                : null;
+
+            string nextPageLink = validFilter.PageNumber < totalPages
+                ? Url.Link("DefaultApi", new { PageNumber = validFilter.PageNumber + 1, PageSize = validFilter.PageSize })
+                : null;
+
+            var response = new PagedResponse<List<Customer>>(pagedData, validFilter.PageNumber, validFilter.PageSize)
+            {
+                TotalPages = totalPages,
+                TotalRecords = totalRecords,
+                PrevPageLink = prevPageLink,
+                NextPageLink = nextPageLink
+            };
+
+            return Ok(response);
         }
+
         //
         // GET: api/Customer/5
         [HttpGet("{id}")]
